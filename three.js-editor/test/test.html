@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+
+<style>
+
+html, body {
+   margin: 0;
+   height: 100%;
+}
+
+#c {
+    width: 50%;  /* let our container decide our size */
+    height: 50%;
+    display: block;
+}
+
+#container {
+  position: relative;  /* makes this the origin of its children */
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#labels {
+  position: absolute;  /* let us position ourself inside the container */
+  left: 0;             /* make our position the top left of the container */
+  top: 0;
+  color: white;
+}
+
+#labels>div {
+  position: absolute;  /* let us position them inside the container */
+  left: 0;             /* make their default position the top left of the container */
+  top: 0;
+  cursor: pointer;     /* change the cursor to a hand when over us */
+  font-size: large;
+  user-select: none;   /* don't let the text get selected */
+  text-shadow:         /* create a black outline */
+    -1px -1px 0 #000,
+     0   -1px 0 #000,
+     1px -1px 0 #000,
+     1px  0   0 #000,
+     1px  1px 0 #000,
+     0    1px 0 #000,
+    -1px  1px 0 #000,
+    -1px  0   0 #000;
+}
+#labels>div:hover {
+  color: red;
+}
+
+</style>
+
+
+  <script src="../build/three.js"></script>
+  <script src="./lib/ThreeHelper.js"></script>
+  <script type="text/javascript">
+
+
+//////////////////////////////////////////
+// RENDERER on CANVAS
+function new_renderer(canvas) {
+  renderer = ( canvas !== undefined ) ? new THREE.WebGLRenderer({canvas}) : new THREE.WebGLRenderer();
+  return renderer;
+}
+
+//////////////////////////////////////////
+// CAMERA of RENDERER
+function new_camera() {
+  const fov = 75;
+  const aspect = 2;  // the canvas default
+  const near = 0.1;
+  const far = 5;
+  camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+  camera.position.set(0, 0, 2);  
+  return light;
+}
+
+//////////////////////////////////////////
+// SCENE of RENDERER
+function new_scene() {
+  scene = new THREE.Scene();
+  return scene;
+}
+
+
+//////////////////////////////////////////
+// LIGHT of SCENE
+function new_light() {
+  const color = 0xFFFFFF;
+  const intensity = 1;
+  light = new THREE.DirectionalLight(color, intensity);
+  light.position.set(-1, 2, 10);  
+  return light;
+}
+//////////////////////////////////////////
+// MESH of SCENE
+function new_mesh(geometry, material) {
+  mesh = new THREE.Mesh(geometry, material);
+  mesh.position.x = 0;
+  return mesh;
+}
+
+
+
+//////////////////////////////////////////
+// GEOMETRY of MESH
+function new_geometry_box(width, height, depth) {
+  geometry = new THREE.BoxGeometry(width, height, depth);
+  return geometry;
+}
+
+function new_geometry_cube(size) {
+  return new_geometry_box(size, size, size);
+}
+
+
+//////////////////////////////////////////
+// MATERIAL of MESH
+function new_material_basic_color(color) {
+  material = new THREE.MeshBasicMaterial({color});
+  return material;
+}
+
+function new_material_light_color(color) {
+  material = new THREE.MeshPhongMaterial({color});
+  return material;
+}
+
+//
+//////////////////////////////////////////
+
+// MESH of SCENE
+
+var _labelContainerElem;
+
+function build_cube_object(name) {
+  const cube_size = 1;
+  const geometry = new_geometry_cube(cube_size);
+
+  const color_greenish_blue = 0x44aa88;
+  const material = new_material_light_color(color_greenish_blue);
+
+  const cube = new_mesh(geometry, material);
+  cube.position.x = 0;
+
+
+  const elem = document.createElement('div');
+  elem.textContent = name;
+  _labelContainerElem.appendChild(elem);
+
+  return {cube, elem};
+}
+
+const tempV = new THREE.Vector3();
+const raycaster = new THREE.Raycaster();
+
+var _direction0 = -1;
+var _direction1 = -1;
+
+var _renderer;
+var _camera
+
+var _canvas;
+var _canvas_width = 0;
+var _canvas_height = 0;
+
+var _cubes = [];
+
+function resizeRendererToDisplaySize(renderer) {
+  const width = _canvas.clientWidth;
+  const height = _canvas.clientHeight;
+  const needResize = _canvas_width !== width || _canvas_height !== height;
+  if (needResize) {
+    renderer.setSize(width, height, false);
+  }
+  return needResize;
+}
+
+
+function draw_element_on_object(obj, elem)
+{
+  /////////////////////////
+  // get the position of the center of the obj
+  obj.updateWorldMatrix(true, false);
+  obj.getWorldPosition(tempV);
+ 
+  // get the normalized screen coordinate of that position
+  // x and y will be in the -1 to +1 range with x = -1 being
+  // on the left and y = -1 being on the bottom
+  tempV.project(_camera);
+
+   // convert the normalized position to CSS coordinates
+  const x = (tempV.x *  .5 + .5) * _canvas.clientWidth;
+  const y = (tempV.y * -.5 + .5) * _canvas.clientHeight;
+ 
+  // move the elem to that position
+  elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
+  //elem.textContent = 'x='+x+', y='+y;
+
+  //
+  /////////////////////////
+}
+
+
+function move_object_on_X(time, obj)
+{
+  // rotate
+	obj.rotation.x = time*0.001;
+	obj.rotation.y = time*0.001;
+
+  // move on X
+  if ( obj.position.x > 1 || obj.position.x < -1 )  {
+    _direction0 *= (-1);
+  }
+  obj.position.x += (0.01*_direction0);
+}
+
+
+function move_object_on_Z(time, obj)
+{
+  // rotate
+	obj.rotation.x = time*0.001;
+	obj.rotation.y = time*0.001;
+
+  // move on Z
+  if ( obj.position.z > 3 || obj.position.z < -3 )  {
+    _direction1 *= (-1);
+  }
+  obj.position.z += (0.01*_direction1);
+}
+
+
+function updater(time)
+{
+
+  /////////////////////////
+  // window canvas 비율 동적 변환
+  if (resizeRendererToDisplaySize(_renderer)) {
+    const canvas = _renderer.domElement;
+    _camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    _camera.updateProjectionMatrix();
+
+    // 현재 사이즈 저장
+    _canvas_width = canvas.clientWidth;
+    _canvas_height = canvas.clientHeight;
+  }
+  //
+  /////////////////////////
+
+  _cubes.forEach((cubeInfo, ndx) => {
+    const {cube, elem} = cubeInfo;
+    switch (ndx)
+    {
+    case 0:
+      move_object_on_X(time, cube);
+      draw_element_on_object(cube, elem);
+    break;
+    
+    case 1:
+      move_object_on_Z(time, cube);
+      draw_element_on_object(cube, elem);
+    break;
+    }
+  });
+
+}
+
+function test_helper()
+{
+  _canvas = document.querySelector('#c');
+  _labelContainerElem = document.querySelector('#labels');
+
+
+	threeHelper = new ThreeHelper(_canvas);	
+
+  threeHelper.set_camera_position(0, 0, 5);
+
+  _renderer = threeHelper.get_renderer();
+  _camera = threeHelper.get_camera();
+
+
+  light = new_light();
+	threeHelper.add_scean_object(light);
+
+
+  _cubes.push(build_cube_object('하나하나하나하나하나'));
+  _cubes.push(build_cube_object('TWO000000000000'));
+
+
+  _cubes.forEach((cubeInfo, ndx) => {
+    const {cube, elem} = cubeInfo;
+    threeHelper.add_scean_object(cube);
+  });
+
+
+	threeHelper.render_animate(updater);
+
+
+	function myPeriodicMethod( )	{
+	    document.getElementById('results_json').innerHTML = 'draw ' + threeHelper.getSceneAsJSONString();
+	}
+	setInterval(myPeriodicMethod, 1000);
+}
+
+
+
+function onload_main(){
+	test_helper();
+}
+window.onload = onload_main;
+
+</script>
+
+</head>
+
+<body>
+	
+
+  <div id="container">
+    <canvas id="c"></canvas>
+    <div id="labels"></div>
+  </div>
+
+	<div id="results_json"></div>
+
+</body>
+
+
+
+</html>
