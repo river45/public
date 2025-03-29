@@ -287,8 +287,8 @@ function test_helper()
 	threeHelper.add_scean_object(light);
 
 
-  _cubes.push(build_cube_object('하나하나하나하나하나'));
-  _cubes.push(build_cube_object('TWO000000000000'));
+  _cubes.push(build_cube_object('봄여름가을겨울'));
+  _cubes.push(build_cube_object('봄여름가을겨울'));
 
 
   _cubes.forEach((cubeInfo, ndx) => {
@@ -296,12 +296,10 @@ function test_helper()
     threeHelper.add_scean_object(cube);
   });
 
-
 	threeHelper.render_animate(updater);
 
-
 	function myPeriodicMethod( )	{
-	    document.getElementById('results_json').innerHTML = 'draw ' + threeHelper.getSceneAsJSONString();
+		document.getElementById('results_json').innerHTML = 'draw ' + threeHelper.getSceneAsJSONString();
 	}
 	setInterval(myPeriodicMethod, 1000);
 }
