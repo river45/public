@@ -1,0 +1,22 @@
+name: CI Example
+
+on:
+  push:
+    branches: [ "main", "master" ]   # main 또는 master 브랜치에 push될 때 실행
+  pull_request:
+    branches: [ "main", "master" ]   # main 또는 master 대상 PR 생성 시 실행
+  workflow_dispatch:  # 수동 트리거 허용
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run a command
+        run: |
+          echo "Hello from Ubuntu!"
+          echo "Ref: $GITHUB_REF"
+          echo "Commit: $GITHUB_SHA"
+          ls -la
