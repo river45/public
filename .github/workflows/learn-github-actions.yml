@@ -17,6 +17,20 @@ jobs:
       - name: Run a command
         run: |
           echo "Hello from Ubuntu!"
-          echo "Ref: $GITHUB_REF"
+          echo "Event: $GITHUB_EVENT_NAME"
+          echo "GITHUB_REF env: '$GITHUB_REF'"
+          echo "github.ref expression: '${{ github.ref }}'"
           echo "Commit: $GITHUB_SHA"
+          echo "Event payload path: $GITHUB_EVENT_PATH"
+          if [ -f "$GITHUB_EVENT_PATH" ]; then
+            echo "--- Event payload start ---"
+            # Try to pretty-print JSON if jq is available, otherwise cat
+            cat "$GITHUB_EVENT_PATH" | jq '.' || cat "$GITHUB_EVENT_PATH"
+            echo "--- Event payload end ---"
+          else
+            echo "No event payload file present"
+          fi
+          echo "--- Workspace listing ---"
           ls -la
+          echo "--- Environment variables (sorted) ---"
+          env | sort
